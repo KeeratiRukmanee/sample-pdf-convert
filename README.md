@@ -6,4 +6,4 @@
 `npm run dev:win`
 
 **_Mac/Linux_**
-`npm run:linux`
+`npm run dev:linux`

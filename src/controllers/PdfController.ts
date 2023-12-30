@@ -28,23 +28,24 @@ export class PdfController {
   @Post('/upload')
   async upload(@UploadedFile('file') file: any, @Req() req: Request) {
 
-    // console.log(req.headers["request-id"]);
-    // console.log(file);
-    // console.log(__dirname);
-
     const newDir: string = `${__dirname}/../../storage/${req.headers["request-id"]}`
     const filePath = path.join(newDir, file.originalname)
 
     filesystem.mkdirSync(newDir);
     filesystem.writeFile(filePath, file.buffer, (error) => {
-      throw new Error(`${error}`)
+      if (error) {
+        throw new Error(`${error}`)
+      }
     })
 
-    //windows
-    const poppler = new Poppler()
-
-    //linux
-    // const poppler = new Poppler("/usr/bin")
+    let poppler
+    if (process.platform === "win32") {
+      //windows
+      poppler = new Poppler()
+    } else {
+      //linux
+      poppler = new Poppler("/usr/bin")
+    }
 
     let fileInfo: any
     await poppler.pdfInfo(filePath, {
@@ -78,7 +79,6 @@ export class PdfController {
       message: "upload and convert to image success",
       data: {
         allOfPages: Number(fileInfo.pages),
-        // thumpnail: `/static/${req.headers["request-id"]}/${path.basename(filePath, path.extname(filePath))}-001.jpg`,
         fullfile: allFiles,
       }
     }
@@ -89,6 +89,9 @@ export class PdfController {
   @HttpCode(200)
   @Get('/')
   getUsers(@Req() req: Request): ResponseDTO {
+
+
+    console.log(process.platform)
 
     const res: ResponseDTO = {
       requestId: req.headers["request-id"],

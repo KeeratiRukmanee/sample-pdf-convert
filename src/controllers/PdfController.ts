@@ -37,7 +37,7 @@ export class PdfController {
 
     filesystem.mkdirSync(newDir);
     filesystem.writeFile(filePath, file.buffer, (error) => {
-      // console.error(error)
+      throw new Error(`${error}`)
     })
 
     //windows

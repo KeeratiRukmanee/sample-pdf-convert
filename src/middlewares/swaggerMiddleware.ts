@@ -23,7 +23,7 @@ export function swaggerHandler() {
                 }
             },
             info: {
-                title: 'Node Best Practice test API',
+                title: 'Sample PDF Convert API',
                 version: '0.0.1'
             }
         })

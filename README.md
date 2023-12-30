@@ -1,11 +1,9 @@
-"# sample pdf convert"
+# sample pdf convert
 
-How to start project
+## How to start project
 
-Windows
+**_Windows_**
+`npm run dev:win`
 
-- npm run dev:win
-
-Mac/Linux
-
--npm run:linux
+**_Mac/Linux_**
+`npm run:linux`

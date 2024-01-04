@@ -1,7 +1,5 @@
 import { Request } from "express"
-import { UserService } from "../services/UserService"
 import { LoggerService } from "../services/LoggerService"
-import { UserDTO } from "../dtos/UserDTO"
 import { ResponseDTO } from "../dtos/ResponseDTO"
 import { Inject, Service } from "typedi"
 import { Body, Get, Post, JsonController, Req, HttpCode, Param, UploadedFile } from "routing-controllers"
@@ -9,6 +7,7 @@ import { OpenAPI } from 'routing-controllers-openapi'
 import filesystem from 'fs';
 import { Poppler } from 'node-poppler'
 import path from "path"
+import { fromBuffer } from 'pdf2pic';
 
 @Service()
 @OpenAPI({
@@ -38,48 +37,82 @@ export class PdfController {
       }
     })
 
-    let poppler
-    if (process.platform === "win32") {
-      //windows
-      poppler = new Poppler()
-    } else {
-      //linux
-      poppler = new Poppler("/usr/bin")
-    }
+    /*Lib
+      node-poopler
+    ↓↓*/
 
-    let fileInfo: any
-    await poppler.pdfInfo(filePath, {
-      printAsJson: true
-    }).then((res) => {
-      fileInfo = res
-    })
+    // let poppler
+    // if (process.platform === "win32") {
+    //   //windows
+    //   poppler = new Poppler()
+    // } else {
+    //   //linux
+    //   poppler = new Poppler("/usr/bin")
+    // }
 
-    const outputFile = `${newDir}/${path.basename(filePath, path.extname(filePath))}`
-    await poppler.pdfToCairo(filePath, outputFile, {
-      firstPageToConvert: 1,
-      scalePageTo: 1920,
-      jpegFile: true,
-    })
+    // let fileInfo: any
+    // await poppler.pdfInfo(filePath, {
+    //   printAsJson: true
+    // }).then((res) => {
+    //   fileInfo = res
+    // })
 
-    let allFiles = []
-    for (let index = 1; index <= Number(fileInfo.pages); index++) {
+    // const outputFile = `${newDir}/${path.basename(filePath, path.extname(filePath))}`
+    // await poppler.pdfToCairo(filePath, outputFile, {
+    //   firstPageToConvert: 1,
+    //   scalePageTo: 2000,
+    //   jpegFile: true,
+    // })
 
-      let str = '' + index
-      while (str.length < fileInfo.pages.length) {
-        str = '0' + str;
-      }
+    // let allFiles = []
+    // for (let index = 1; index <= Number(fileInfo.pages); index++) {
 
-      allFiles.push(`/static/${req.headers["request-id"]}/${path.basename(filePath, path.extname(filePath))}-${str}.jpg`);
+    //   let str = '' + index
+    //   while (str.length < fileInfo.pages.length) {
+    //     str = '0' + str;
+    //   }
 
-    }
+    //   allFiles.push(`/static/${req.headers["request-id"]}/${path.basename(filePath, path.extname(filePath))}-${str}.jpg`);
 
+    // }
+
+    /*Lib
+      pdf2pic
+    ↓↓*/
+
+    const options = {
+      density: 200,           // Output image quality
+      saveFilename: file.originalname, // Prefix for the output file names
+      savePath: newDir,    // Output directory (current directory in this case)
+      format: 'jpg',          // Output image format
+      preserveAspectRatio: true,
+      height: 2000,            // Output image height
+      compression: 'jpeg'
+    };
+
+    // const pdfConverter = fromPath(pdfPath, options);
+    const pdfConverter = fromBuffer(file.buffer, options);
+
+    let allFiles: any = []
+    let pages = 0
+    await pdfConverter.bulk(-1, { responseType: "image" }).then((resolve) => {
+      resolve.forEach((res) => {
+        allFiles.push(`/static/${req.headers["request-id"]}/${res.name}`);
+      })
+      pages = resolve.length
+    }).catch((error) => {
+      console.error('Error converting PDF to images:', error);
+    });
+
+
+    //response
     const res: ResponseDTO = {
       requestId: req.headers["request-id"],
       success: true,
       message: "upload and convert to image success",
       data: {
-        allOfPages: Number(fileInfo.pages),
-        fullfile: allFiles,
+        pages: pages,
+        files: allFiles,
       }
     }
 
